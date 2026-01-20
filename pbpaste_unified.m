@@ -8,7 +8,7 @@ void
 usage ()
 {
     fprintf(stderr,
-        "Usage: %s [OPTIONS] <dest.png>\n"
+        "Usage: %s [OPTIONS]\n"
         "\t--Prefer {txt|rtf|ps|png|jpeg|jpg}\t" "Prefer pasteboard type" "\n"
         "\t-- -Prefer {txt|rtf|ps|png|jpeg|jpg}\t" "Prefer pasteboard type" "\n"
         "\t\t\t\t" "If clipboard contains text, paste text directly" "\n"
@@ -244,14 +244,14 @@ parseArguments (int argc, char* const argv[])
         }
     }
 
-    if (index >= argc) {
-        params.malformed = YES;
-    } else if (index + 1 < argc) {
+    if (index + 1 < argc) {
         params.malformed = YES;
     } else {
-        params.outputFile =
-            [[NSString alloc] initWithCString:argv[index]
-                                     encoding:NSUTF8StringEncoding];
+        if (index < argc) {
+            params.outputFile =
+                [[NSString alloc] initWithCString:argv[index]
+                                         encoding:NSUTF8StringEncoding];
+        }
     }
     return params;
 }
@@ -282,25 +282,44 @@ main (int argc, char * const argv[])
     NSData *imageData = getPasteboardImageData(bitmapImageFileType);
     NSData *textData = nil;
     int exitCode;
+    NSFileHandle *stdoutHandle = nil;
 
     if (imageData != nil) {
-        if ([imageData writeToFile:params.outputFile atomically:YES]) {
+        if (params.outputFile == nil) {
+            if (stdoutHandle == nil) {
+                stdoutHandle =
+                    (NSFileHandle *)[NSFileHandle fileHandleWithStandardOutput];
+            }
+            [stdoutHandle writeData:imageData];
             exitCode = EXIT_SUCCESS;
         } else {
-            fatal("Could not write to file!");
-            exitCode = EXIT_FAILURE;
+            if ([imageData writeToFile:params.outputFile atomically:YES]) {
+                exitCode = EXIT_SUCCESS;
+            } else {
+                fatal("Could not write to file!");
+                exitCode = EXIT_FAILURE;
+            }
         }
     } else {
         textData = getPasteboardTextData(params.outputPreference);
         if (textData != nil) {
-            NSError *error = nil;
-            if ([textData writeToFile:params.outputFile
-                              options:NSDataWritingAtomic
-                                error:&error]) {
+            if (params.outputFile == nil) {
+                if (stdoutHandle == nil) {
+                    stdoutHandle =
+                        (NSFileHandle *)[NSFileHandle fileHandleWithStandardOutput];
+                }
+                [stdoutHandle writeData:textData];
                 exitCode = EXIT_SUCCESS;
             } else {
-                fatal("Could not write text to file!");
-                exitCode = EXIT_FAILURE;
+                NSError *error = nil;
+                if ([textData writeToFile:params.outputFile
+                                  options:NSDataWritingAtomic
+                                    error:&error]) {
+                    exitCode = EXIT_SUCCESS;
+                } else {
+                    fatal("Could not write text to file!");
+                    exitCode = EXIT_FAILURE;
+                }
             }
         } else {
             fatal("No image or text data found on the clipboard!");
