@@ -17,22 +17,22 @@ typedef enum imageType
     ImageTypeBitmap,
 } ImageType;
 
-typedef enum textPreference
+typedef enum outputPreference
 {
-    TextPreferenceNone = 0,
-    TextPreferenceText,
-    TextPreferenceRTF,
-    TextPreferencePostScript,
-} TextPreference;
+    OutputPreferenceNone = 0,
+    OutputPreferenceText,
+    OutputPreferenceRTF,
+    OutputPreferencePostScript,
+    OutputPreferencePNG,
+    OutputPreferenceJPEG,
+} OutputPreference;
 
 typedef struct parameters
 {
     NSString *outputFile;
     BOOL wantsVersion;
     BOOL wantsUsage;
-    TextPreference textPreference;
-    BOOL hasImagePreference;
-    NSBitmapImageFileType imagePreference;
+    OutputPreference outputPreference;
     BOOL malformed;
 } Parameters;
 
@@ -46,7 +46,7 @@ NSData *renderFromBitmap (NSImage *image, NSBitmapImageFileType bitmapImageFileT
 NSData *renderFromPDF (NSImage *image, NSBitmapImageFileType bitmapImageFileType);
 NSBitmapImageFileType getBitmapImageFileTypeFromFilename (NSString *filename);
 NSData *getPasteboardImageData (NSBitmapImageFileType bitmapImageFileType);
-NSData *getPasteboardTextData (TextPreference preference);
+NSData *getPasteboardTextData (OutputPreference preference);
 
 Parameters parseArguments (int argc, char* const argv[]);
 

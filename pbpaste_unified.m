@@ -149,20 +149,22 @@ getPasteboardImageData (NSBitmapImageFileType bitmapImageFileType)
 }
 
 NSData *
-getPasteboardTextData (TextPreference preference)
+getPasteboardTextData (OutputPreference preference)
 {
     NSPasteboard *pasteBoard = [NSPasteboard generalPasteboard];
     NSData *textData = nil;
 
     switch (preference) {
-    case TextPreferenceRTF:
+    case OutputPreferenceRTF:
         textData = [pasteBoard dataForType:NSPasteboardTypeRTF];
         break;
-    case TextPreferencePostScript:
+    case OutputPreferencePostScript:
         textData = [pasteBoard dataForType:NSPasteboardTypePostScript];
         break;
-    case TextPreferenceText:
-    case TextPreferenceNone:
+    case OutputPreferenceText:
+    case OutputPreferencePNG:
+    case OutputPreferenceJPEG:
+    case OutputPreferenceNone:
     default: {
         NSString *text = [pasteBoard stringForType:NSPasteboardTypeString];
         if (text != nil) {
@@ -183,9 +185,7 @@ parseArguments (int argc, char* const argv[])
     params.outputFile = nil;
     params.wantsVersion = NO;
     params.wantsUsage = NO;
-    params.textPreference = TextPreferenceNone;
-    params.hasImagePreference = NO;
-    params.imagePreference = NSBitmapImageFileTypePNG;
+    params.outputPreference = OutputPreferenceNone;
     params.malformed = NO;
 
     int ch;
@@ -228,18 +228,16 @@ parseArguments (int argc, char* const argv[])
 
     if (preferValue != NULL) {
         if (!strcmp(preferValue, "txt")) {
-            params.textPreference = TextPreferenceText;
+            params.outputPreference = OutputPreferenceText;
         } else if (!strcmp(preferValue, "rtf")) {
-            params.textPreference = TextPreferenceRTF;
+            params.outputPreference = OutputPreferenceRTF;
         } else if (!strcmp(preferValue, "ps")) {
-            params.textPreference = TextPreferencePostScript;
+            params.outputPreference = OutputPreferencePostScript;
         } else if (!strcmp(preferValue, "png")) {
-            params.hasImagePreference = YES;
-            params.imagePreference = NSBitmapImageFileTypePNG;
+            params.outputPreference = OutputPreferencePNG;
         } else if (!strcmp(preferValue, "jpeg")
                    || !strcmp(preferValue, "jpg")) {
-            params.hasImagePreference = YES;
-            params.imagePreference = NSBitmapImageFileTypeJPEG;
+            params.outputPreference = OutputPreferenceJPEG;
         } else {
             params.malformed = YES;
             return params;
@@ -273,9 +271,14 @@ main (int argc, char * const argv[])
         return EXIT_SUCCESS;
     }
 
-    NSBitmapImageFileType bitmapImageFileType = params.hasImagePreference
-        ? params.imagePreference
-        : getBitmapImageFileTypeFromFilename(params.outputFile);
+    NSBitmapImageFileType bitmapImageFileType;
+    if (params.outputPreference == OutputPreferenceJPEG) {
+        bitmapImageFileType = NSBitmapImageFileTypeJPEG;
+    } else if (params.outputPreference == OutputPreferencePNG) {
+        bitmapImageFileType = NSBitmapImageFileTypePNG;
+    } else {
+        bitmapImageFileType = getBitmapImageFileTypeFromFilename(params.outputFile);
+    }
     NSData *imageData = getPasteboardImageData(bitmapImageFileType);
     NSData *textData = nil;
     int exitCode;
@@ -288,7 +291,7 @@ main (int argc, char * const argv[])
             exitCode = EXIT_FAILURE;
         }
     } else {
-        textData = getPasteboardTextData(params.textPreference);
+        textData = getPasteboardTextData(params.outputPreference);
         if (textData != nil) {
             NSError *error = nil;
             if ([textData writeToFile:params.outputFile
