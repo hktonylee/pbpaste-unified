@@ -2,12 +2,12 @@
 all:
 	$(CC) -Wall -g -O3 -ObjC \
 		-framework Foundation -framework AppKit \
-		-o pngpaste \
-		pngpaste.m
+		-o pbpaste_unified \
+		pbpaste_unified.m
 install: all
-	cp pngpaste /usr/local/bin/
+	cp pbpaste_unified /usr/local/bin/
 clean:
 	find . \( -name '*~' -or -name '#*#' -or -name '*.o' \
-		  -or -name 'pngpaste' -or -name 'pngpaste.dSYM' \) \
+		  -or -name 'pbpaste_unified' -or -name 'pbpaste_unified.dSYM' \) \
 		-exec rm -rfv {} \;
-	rm -rfv *.dSYM/ pngpaste;
+	rm -rfv *.dSYM/ pbpaste_unified;

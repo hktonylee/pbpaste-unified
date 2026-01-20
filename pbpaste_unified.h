@@ -1,12 +1,12 @@
 /*
- * pngpaste
+ * pbpaste_unified
  */
 
 #import <Foundation/Foundation.h>
 #import <Cocoa/Cocoa.h>
 #import <unistd.h>
 
-#define APP_NAME "pngpaste"
+#define APP_NAME "pbpaste_unified"
 #define APP_VERSION "0.2.3"
 #define PDF_SCALE_FACTOR 1.5
 #define STDOUT_FILENAME "-"

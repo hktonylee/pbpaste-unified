@@ -1,11 +1,11 @@
-pngpaste
+pbpaste_unified
 ========
 
 Paste PNG into files on MacOS, much like `pbpaste` does for text. If the
-clipboard contains text instead of an image, pngpaste writes the text
+clipboard contains text instead of an image, pbpaste_unified writes the text
 directly.
 
-However instead of `pngpaste > thefile.png`, it's `pngpaste thefile.png`,
+However instead of `pbpaste_unified > thefile.png`, it's `pbpaste_unified thefile.png`,
 so one does not accidentally barf binary into the console.
 
 ### Motivation
@@ -25,11 +25,11 @@ From source:
 
 Or with Homebrew:
 
-    $ brew install pngpaste
+    $ brew install pbpaste_unified
 
 ### Usage
 
-    $ pngpaste hooray.png
+    $ pbpaste_unified hooray.png
 
     # If clipboard contains text, writes text to the file or stdout.
 
