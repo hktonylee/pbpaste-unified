@@ -38,6 +38,7 @@ NSData *renderFromBitmap (NSImage *image, NSBitmapImageFileType bitmapImageFileT
 NSData *renderFromPDF (NSImage *image, NSBitmapImageFileType bitmapImageFileType);
 NSBitmapImageFileType getBitmapImageFileTypeFromFilename (NSString *filename);
 NSData *getPasteboardImageData (NSBitmapImageFileType bitmapImageFileType);
+NSString *getPasteboardText ();
 
 Parameters parseArguments (int argc, char* const argv[]);
 
