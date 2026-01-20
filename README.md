@@ -1,7 +1,9 @@
 pngpaste
 ========
 
-Paste PNG into files on MacOS, much like `pbpaste` does for text.
+Paste PNG into files on MacOS, much like `pbpaste` does for text. If the
+clipboard contains text instead of an image, pngpaste writes the text
+directly.
 
 However instead of `pngpaste > thefile.png`, it's `pngpaste thefile.png`,
 so one does not accidentally barf binary into the console.
@@ -28,6 +30,8 @@ Or with Homebrew:
 ### Usage
 
     $ pngpaste hooray.png
+
+    # If clipboard contains text, writes text to the file or stdout.
 
 ### Bonus and Disclaimers
 

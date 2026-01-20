@@ -11,6 +11,7 @@ usage ()
         "Usage: %s [OPTIONS] <dest.png>\n"
         "\t-\t" "Print to standard output" "\n"
         "\t-b\t" "Print to standard output as base64" "\n"
+        "\t\t" "If clipboard contains text, paste text directly" "\n"
         "\t-v\t" "Version" "\n"
         "\t-h,-?\t" "This usage" "\n",
         APP_NAME);
@@ -147,6 +148,15 @@ getPasteboardImageData (NSBitmapImageFileType bitmapImageFileType)
     return imageData;
 }
 
+NSString *
+getPasteboardText ()
+{
+    NSPasteboard *pasteBoard = [NSPasteboard generalPasteboard];
+    NSString *text = [pasteBoard stringForType:NSPasteboardTypeString];
+
+    return text;
+}
+
 Parameters
 parseArguments (int argc, char* const argv[])
 {
@@ -212,6 +222,7 @@ main (int argc, char * const argv[])
     NSBitmapImageFileType bitmapImageFileType =
         getBitmapImageFileTypeFromFilename(params.outputFile);
     NSData *imageData = getPasteboardImageData(bitmapImageFileType);
+    NSString *text = nil;
     int exitCode;
 
     if (imageData != nil) {
@@ -235,8 +246,30 @@ main (int argc, char * const argv[])
             }
         }
     } else {
-        fatal("No image data found on the clipboard, or could not convert!");
-        exitCode = EXIT_FAILURE;
+        text = getPasteboardText();
+        if (text != nil) {
+            if (params.wantsStdout || params.wantsBase64) {
+                NSFileHandle *stdout =
+                    (NSFileHandle *)[NSFileHandle fileHandleWithStandardOutput];
+                NSData *textData = [text dataUsingEncoding:NSUTF8StringEncoding];
+                [stdout writeData:textData];
+                exitCode = EXIT_SUCCESS;
+            } else {
+                NSError *error = nil;
+                if ([text writeToFile:params.outputFile
+                           atomically:YES
+                             encoding:NSUTF8StringEncoding
+                                error:&error]) {
+                    exitCode = EXIT_SUCCESS;
+                } else {
+                    fatal("Could not write text to file!");
+                    exitCode = EXIT_FAILURE;
+                }
+            }
+        } else {
+            fatal("No image or text data found on the clipboard!");
+            exitCode = EXIT_FAILURE;
+        }
     }
 
     return exitCode;
