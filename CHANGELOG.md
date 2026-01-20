@@ -1,4 +1,4 @@
-# pngpaste changelog
+# pbpaste_unified changelog
 
 ## 0.2.3
 

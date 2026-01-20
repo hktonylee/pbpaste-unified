@@ -1,8 +1,8 @@
 /*
- * pngpaste
+ * pbpaste_unified
  */
 
-#import "pngpaste.h"
+#import "pbpaste_unified.h"
 
 void
 usage ()
