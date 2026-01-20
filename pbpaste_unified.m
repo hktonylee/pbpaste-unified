@@ -8,10 +8,10 @@ void
 usage ()
 {
     fprintf(stderr,
-        "Usage: %s [OPTIONS] <dest.png>\n"
-        "\t-\t" "Print to standard output" "\n"
-        "\t-b\t" "Print to standard output as base64" "\n"
-        "\t\t" "If clipboard contains text, paste text directly" "\n"
+        "Usage: %s [OPTIONS]\n"
+        "\t--Prefer {txt|rtf|ps|png|jpeg|jpg}\t" "Prefer pasteboard type" "\n"
+        "\t-- -Prefer {txt|rtf|ps|png|jpeg|jpg}\t" "Prefer pasteboard type" "\n"
+        "\t\t\t\t" "If clipboard contains text, paste text directly" "\n"
         "\t-v\t" "Version" "\n"
         "\t-h,-?\t" "This usage" "\n",
         APP_NAME);
@@ -148,13 +148,33 @@ getPasteboardImageData (NSBitmapImageFileType bitmapImageFileType)
     return imageData;
 }
 
-NSString *
-getPasteboardText ()
+NSData *
+getPasteboardTextData (OutputPreference preference)
 {
     NSPasteboard *pasteBoard = [NSPasteboard generalPasteboard];
-    NSString *text = [pasteBoard stringForType:NSPasteboardTypeString];
+    NSData *textData = nil;
 
-    return text;
+    switch (preference) {
+    case OutputPreferenceRTF:
+        textData = [pasteBoard dataForType:NSPasteboardTypeRTF];
+        break;
+    case OutputPreferencePostScript:
+        textData = [pasteBoard dataForType:NSPasteboardTypePostScript];
+        break;
+    case OutputPreferenceText:
+    case OutputPreferencePNG:
+    case OutputPreferenceJPEG:
+    case OutputPreferenceNone:
+    default: {
+        NSString *text = [pasteBoard stringForType:NSPasteboardTypeString];
+        if (text != nil) {
+            textData = [text dataUsingEncoding:NSUTF8StringEncoding];
+        }
+        break;
+    }
+    }
+
+    return textData;
 }
 
 Parameters
@@ -165,17 +185,12 @@ parseArguments (int argc, char* const argv[])
     params.outputFile = nil;
     params.wantsVersion = NO;
     params.wantsUsage = NO;
-    params.wantsBase64 = NO;
-    params.wantsStdout = NO;
+    params.outputPreference = OutputPreferenceNone;
     params.malformed = NO;
 
     int ch;
-    while ((ch = getopt(argc, argv, "bvh?")) != -1) {
+    while ((ch = getopt(argc, argv, "vh?")) != -1) {
         switch (ch) {
-        case 'b':
-            params.wantsBase64 = YES;
-            return params;
-            break;
         case 'v':
             params.wantsVersion = YES;
             return params;
@@ -192,14 +207,51 @@ parseArguments (int argc, char* const argv[])
         }
     }
 
-    if (argc < 2) {
+    int index = optind;
+    const char *preferValue = NULL;
+    if (index < argc && !strcmp(argv[index], "--")) {
+        if (index + 2 >= argc || strcmp(argv[index + 1], "-Prefer") != 0) {
+            params.malformed = YES;
+            return params;
+        }
+        preferValue = argv[index + 2];
+        index += 3;
+    } else if (index < argc && (!strcmp(argv[index], "--Prefer")
+                               || !strcmp(argv[index], "-Prefer"))) {
+        if (index + 1 >= argc) {
+            params.malformed = YES;
+            return params;
+        }
+        preferValue = argv[index + 1];
+        index += 2;
+    }
+
+    if (preferValue != NULL) {
+        if (!strcmp(preferValue, "txt")) {
+            params.outputPreference = OutputPreferenceText;
+        } else if (!strcmp(preferValue, "rtf")) {
+            params.outputPreference = OutputPreferenceRTF;
+        } else if (!strcmp(preferValue, "ps")) {
+            params.outputPreference = OutputPreferencePostScript;
+        } else if (!strcmp(preferValue, "png")) {
+            params.outputPreference = OutputPreferencePNG;
+        } else if (!strcmp(preferValue, "jpeg")
+                   || !strcmp(preferValue, "jpg")) {
+            params.outputPreference = OutputPreferenceJPEG;
+        } else {
+            params.malformed = YES;
+            return params;
+        }
+    }
+
+    if (index + 1 < argc) {
         params.malformed = YES;
-    } else if (!strcmp(argv[1],STDOUT_FILENAME)) {
-        params.wantsStdout = YES;
     } else {
-        params.outputFile =
-            [[NSString alloc] initWithCString:argv[1]
-                                     encoding:NSUTF8StringEncoding];
+        if (index < argc) {
+            params.outputFile =
+                [[NSString alloc] initWithCString:argv[index]
+                                         encoding:NSUTF8StringEncoding];
+        }
     }
     return params;
 }
@@ -219,23 +271,26 @@ main (int argc, char * const argv[])
         return EXIT_SUCCESS;
     }
 
-    NSBitmapImageFileType bitmapImageFileType =
-        getBitmapImageFileTypeFromFilename(params.outputFile);
+    NSBitmapImageFileType bitmapImageFileType;
+    if (params.outputPreference == OutputPreferenceJPEG) {
+        bitmapImageFileType = NSBitmapImageFileTypeJPEG;
+    } else if (params.outputPreference == OutputPreferencePNG) {
+        bitmapImageFileType = NSBitmapImageFileTypePNG;
+    } else {
+        bitmapImageFileType = getBitmapImageFileTypeFromFilename(params.outputFile);
+    }
     NSData *imageData = getPasteboardImageData(bitmapImageFileType);
-    NSString *text = nil;
+    NSData *textData = nil;
     int exitCode;
+    NSFileHandle *stdoutHandle = nil;
 
     if (imageData != nil) {
-        if (params.wantsStdout) {
-            NSFileHandle *stdout =
-                (NSFileHandle *)[NSFileHandle fileHandleWithStandardOutput];
-            [stdout writeData:imageData];
-            exitCode = EXIT_SUCCESS;
-        } else if (params.wantsBase64) {
-            NSFileHandle *stdout =
-                (NSFileHandle *)[NSFileHandle fileHandleWithStandardOutput];
-            NSData *base64Data = [imageData base64EncodedDataWithOptions:0];
-            [stdout writeData:base64Data];
+        if (params.outputFile == nil) {
+            if (stdoutHandle == nil) {
+                stdoutHandle =
+                    (NSFileHandle *)[NSFileHandle fileHandleWithStandardOutput];
+            }
+            [stdoutHandle writeData:imageData];
             exitCode = EXIT_SUCCESS;
         } else {
             if ([imageData writeToFile:params.outputFile atomically:YES]) {
@@ -246,20 +301,20 @@ main (int argc, char * const argv[])
             }
         }
     } else {
-        text = getPasteboardText();
-        if (text != nil) {
-            if (params.wantsStdout || params.wantsBase64) {
-                NSFileHandle *stdout =
-                    (NSFileHandle *)[NSFileHandle fileHandleWithStandardOutput];
-                NSData *textData = [text dataUsingEncoding:NSUTF8StringEncoding];
-                [stdout writeData:textData];
+        textData = getPasteboardTextData(params.outputPreference);
+        if (textData != nil) {
+            if (params.outputFile == nil) {
+                if (stdoutHandle == nil) {
+                    stdoutHandle =
+                        (NSFileHandle *)[NSFileHandle fileHandleWithStandardOutput];
+                }
+                [stdoutHandle writeData:textData];
                 exitCode = EXIT_SUCCESS;
             } else {
                 NSError *error = nil;
-                if ([text writeToFile:params.outputFile
-                           atomically:YES
-                             encoding:NSUTF8StringEncoding
-                                error:&error]) {
+                if ([textData writeToFile:params.outputFile
+                                  options:NSDataWritingAtomic
+                                    error:&error]) {
                     exitCode = EXIT_SUCCESS;
                 } else {
                     fatal("Could not write text to file!");

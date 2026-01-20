@@ -29,9 +29,14 @@ Or with Homebrew:
 
 ### Usage
 
-    $ pbpaste_unified hooray.png
+    $ pbpaste_unified > hooray.png
 
-    # If clipboard contains text, writes text to the file or stdout.
+    # If clipboard contains text, writes text to the file.
+    $ pbpaste_unified --Prefer txt > note.txt
+    $ pbpaste_unified --Prefer rtf > note.rtf
+    $ pbpaste_unified --Prefer ps > note.ps
+    $ pbpaste_unified --Prefer png > note.png
+    $ pbpaste_unified --Prefer jpeg > note.jpg
 
 ### Bonus and Disclaimers
 
