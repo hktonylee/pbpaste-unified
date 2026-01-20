@@ -9,7 +9,6 @@
 #define APP_NAME "pbpaste_unified"
 #define APP_VERSION "0.2.3"
 #define PDF_SCALE_FACTOR 1.5
-#define STDOUT_FILENAME "-"
 
 typedef enum imageType
 {
@@ -18,13 +17,22 @@ typedef enum imageType
     ImageTypeBitmap,
 } ImageType;
 
+typedef enum textPreference
+{
+    TextPreferenceNone = 0,
+    TextPreferenceText,
+    TextPreferenceRTF,
+    TextPreferencePostScript,
+} TextPreference;
+
 typedef struct parameters
 {
     NSString *outputFile;
     BOOL wantsVersion;
     BOOL wantsUsage;
-    BOOL wantsStdout;
-    BOOL wantsBase64;
+    TextPreference textPreference;
+    BOOL hasImagePreference;
+    NSBitmapImageFileType imagePreference;
     BOOL malformed;
 } Parameters;
 
@@ -38,7 +46,7 @@ NSData *renderFromBitmap (NSImage *image, NSBitmapImageFileType bitmapImageFileT
 NSData *renderFromPDF (NSImage *image, NSBitmapImageFileType bitmapImageFileType);
 NSBitmapImageFileType getBitmapImageFileTypeFromFilename (NSString *filename);
 NSData *getPasteboardImageData (NSBitmapImageFileType bitmapImageFileType);
-NSString *getPasteboardText ();
+NSData *getPasteboardTextData (TextPreference preference);
 
 Parameters parseArguments (int argc, char* const argv[]);
 
