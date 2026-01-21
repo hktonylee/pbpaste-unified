@@ -4,6 +4,18 @@
 
 #import "pbpaste_unified.h"
 
+static NSPasteboardType
+getPostScriptPasteboardType (void)
+{
+#if defined(NSPasteboardTypePostScript)
+    return NSPasteboardTypePostScript;
+#elif defined(NSPostScriptPboardType)
+    return NSPostScriptPboardType;
+#else
+    return @"com.adobe.postscript";
+#endif
+}
+
 void
 usage ()
 {
@@ -159,7 +171,7 @@ getPasteboardTextData (OutputPreference preference)
         textData = [pasteBoard dataForType:NSPasteboardTypeRTF];
         break;
     case OutputPreferencePostScript:
-        textData = [pasteBoard dataForType:NSPasteboardTypePostScript];
+        textData = [pasteBoard dataForType:getPostScriptPasteboardType()];
         break;
     case OutputPreferenceText:
     case OutputPreferencePNG:
